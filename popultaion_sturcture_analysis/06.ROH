@@ -1,0 +1,31 @@
+#!/bin/bash
+##inputing data is all_snp.recode.vcf 
+
+##step1  vcf turn into map and ped 
+vcftools --vcf all_snp.recode.vcf --out snp --plink
+plink --file snp --keep HH_txt --recode tab --out HH ##extract sample the format of HH.txt(sampleid"\t"sampleid)
+##step2 turn into fam bed bim
+plink --file snp --make-bed --out snp
+##step3 ROH
+###plink \
+        --bfile ${input} \
+        --homozyg \
+        --homozyg-density 50 \ 一段ROH中每50kb必须有1个SNP
+        --homozyg-gap 100 \ 如果连续两个SNP的间隔大于100kb，那么就不能归为同一个ROH
+        --homozyg-kb 500 \ 只检测长度大于500kb的ROH
+        --homozyg-snp 50 \ 只检测长度超过50个SNP的ROH
+        --homozyg-window-het 1 \ ROH滑窗中可以允许有一个SNP位点为杂合
+        --homozyg-window-snp 50 \ 滑窗大小为50个SNP
+        --homozyg-window-threshold 0.05 \ 包含某个SNP的完全纯合滑窗的比例至少为5%
+        --out ${output}
+plink --bfile snp
+  --homozyg-group
+  --homozyg-density 20
+  --homozyg-gap 50
+  --homozyg-kb 5 
+  --homozyg-snp 30
+  --homozyg-window-het 2
+  --homozyg-window-missing 2
+  --homozyg-window-snp 30
+  --homozyg-window-threshold 0.05
+  --out snp
