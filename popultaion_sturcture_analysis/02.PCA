@@ -1,0 +1,4 @@
+#!/bin/bash 
+##inputing data(vcf) is LD_filter.vcf
+plink --vcf  LD_filter.vcf   --pca 10 --out  PCA_out   --allow-extra-chr --set-missing-var-ids @:#
+Rscript script/draw_PCA.R PCA_out.eigenvec 1 2 ./sample.pop  PCA_out_figure  ##the format of sample.pop  is  (sampleid"\t"populatonid)
