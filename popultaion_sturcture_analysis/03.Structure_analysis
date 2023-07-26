@@ -1,0 +1,8 @@
+#!/bin/bash 
+##inputing data is LD_filter.vcf (only including chromosomes)
+plink --vcf  LD_filter.vcf  --make-bed --out all  --allow-extra-chr --keep-allele-order --set-missing-var-ids @:#
+seq 2 10 | awk '{print "admixture --cv -j2 all.bed "$1" 1>admix."$1".log 2>&1"}' > admixture.sh
+sh admixture.sh
+mkdir result
+cp  ./*.Q result/
+Rscript  script/draw_admixture.R result all.nosex  structure
