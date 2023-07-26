@@ -1,0 +1,9 @@
+#!/bin/bash 
+##input data is all_snp.recode.vcf 
+
+##method 1 ---vcftools 
+###Fst 
+vcftools  --vcf   all_snp.recode.vcf --fst-window-size 10000 --fst-window-step 10000 --weir-fst-pop CC.txt  --weir-fst-pop HH.txt --out  ./Fst.pop1.pop2 
+Rscript  script/manhattan_Fst.R  ./Fst.pop1.pop2.windowed.weir.fst ./Fst.pop1.pop2.Fst
+###pi
+vcftools  --vcf all_snp.recode.vcf  --window-pi 10000 --window-pi-step  10000  --keep CC.txt   --out ./Pi.pop1
