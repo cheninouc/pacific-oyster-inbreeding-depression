@@ -1,0 +1,15 @@
+#!/bin/bash 
+##This script uses NJ method to build phylogenetic tree
+
+##step1 data preparation--filter LD
+plink --vcf  all_snp.recode.vcf  --indep-pairwise 50 5 0.5 --out tmp.ld   --allow-extra-chr --set-missing-var-ids @:#  
+plink --vcf  all_snp.recode.vcf  --make-bed --extract tmp.ld.prune.in  --out all.LDfilter --recode vcf-iid  --keep-allele-order  --allow-extra-chr --set-missing-var-ids @:#
+##step2 building phylogenetic tree
+run_pipeline.pl -Xms1G -Xmx5G -importGuess LD_filter.vcf -ExportPlugin -saveAs sequences.phy -format Phylip_Inter
+echo -e "sequences.phy\nY" > dnadist.cfg
+dnadist < dnadist.cfg  >dnadist.log
+mv outfile infile.dist
+echo -e "infile.dist\nY"  > neighbor.cfg
+neighbor  <  neighbor.cfg  >nj.log
+less infile.dist | tr '\n' '|'| sed 's/| / /g' | tr '|' '\n' >infile.dist.table
+less outtree | tr '\n' ' '|sed 's/ //g' > outtree.nwk
