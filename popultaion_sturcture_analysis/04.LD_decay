@@ -1,0 +1,7 @@
+#!/bin/bash 
+##inputing data is all_snp.recode.vcf 
+/public/home/chcg/software/PopLDdecay/PopLDdecay -InVCF all_snp.recode.vcf -SubPop CC.txt -MaxDist 2 -OutStat pop.CC_2k.stat ##CC.txt and HH.txt are sample-ids of different pop
+/public/home/chcg/software/PopLDdecay/PopLDdecay -InVCF all_snp.recode.vcf -SubPop HH.txt -MaxDist 2 -OutStat pop.HH_2k.stat
+ls pop.*.stat.gz |awk -F"." '{ print $0"\t"$2 }' > ld_stat.list
+perl /public/home/chcg/software/PopLDdecay/bin/Plot_MultiPop.pl -inList ld_stat.list -output ld_stat.multi
+
