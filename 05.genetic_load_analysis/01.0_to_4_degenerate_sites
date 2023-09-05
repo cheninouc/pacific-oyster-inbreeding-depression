@@ -46,9 +46,14 @@ awk '{print $0, $5 % 3}' |\
 awk '{if(($4 ~ "p.Ser" || $4 ~ "p.Pro" || $4 ~ "p.Thr" || $4 ~ "p.Ala" || $4 ~ "p.Val" || $4 ~ "p.Leu" || $4 ~ "p.Gly" || $4 ~ "p.Arg") && $7 == 0) print $1, $2,"4FOLD"}' OFS="\t" >4_degeneration_site
 
 ##calculate 0/4 fold degeneration
+cut -f 1,2 0_degeneration_site > 0_site 
+cut -f 1,2 4_degeneration_site > 4_site 
+vcftools --positions 0_site --vcf all.filtered.snp.ann.vcf --recode --recode-INFO-all --out 0_site
+vcftools --positions 4_site --vcf all.filtered.snp.ann.vcf --recode --recode-INFO-all --out 4_site
 
+pixy --stats pi --vcf 4_site.recode.vcf.gz --window_size 100000 --populations sample_id --output_prefix 4_site  --bypass_invariant_check 'yes'
+pixy --stats pi --vcf 0_site.recode.vcf.gz --window_size 100000 --populations sample_id --output_prefix 0_site  --bypass_invariant_check 'yes' 
 
-pixy --stats pi --vcf missense.vcf.gz --window_size 100000 --populations sample_id --output_prefix missense --bypass_invariant_check 'yes'
 cut -f 1 missense_pi.txt  | sed '1d' | sort | uniq  > list 
 cat list | while read i ; do  echo $i>> missense_pi_summary  ; grep $i missense_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >> missense_pi_summary ; done
 
