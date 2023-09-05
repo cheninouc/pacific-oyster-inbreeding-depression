@@ -1,0 +1,57 @@
+#!/bin/bash
+###The main aim of this script is to first build the database of the pacific oyster ruslin reference genome
+git clone https://github.com/pauline-ng/SIFT4G_Create_Genomic_DB.git scripts_to_build_SIFT_db
+
+##Document preparation
+cgigas.fa.gz
+cgigas.gtf.gz
+cgigas.pep.all.fa
+uniref90.fasta
+
+mkdir c.gigas
+mkdir c.gigas/cgigas_ccg
+mkdir c.gigas/cgigas_ccg/chr-src
+mkdir c.gigas/cgigas_ccg/chr-src/gene-annotation-src 
+
+cp cgigas.fa.gz /public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/chr-src
+cp cgigas.gtf.gz /public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/gene-annotation-src
+cp cgigas.pep.all.fa /public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/gene-annotation-src
+cp uniref90.fasta /public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/gene-annotation-src
+
+##write config files 
+
+GENETIC_CODE_TABLE=1
+GENETIC_CODE_TABLENAME=Standard
+#MITO_GENETIC_CODE_TABLE=2
+#MITO_GENETIC_CODE_TABLENAME=Vertebrate Mitochondrial
+
+PARENT_DIR=/public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg
+ORG=cgigas
+ORG_VERSION=cgigas1.0
+#DBSNP_VCF_FILE=Homo_sapiens.vcf.gz
+
+#Running SIFT 4G
+SIFT4G_PATH=/public/home/chcg/anaconda3/envs/sift/bin/sift4g
+PROTEIN_DB=/public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/gene-annotation-src/uniref90.fasta
+# Sub-directories, don't need to change
+GENE_DOWNLOAD_DEST=gene-annotation-src
+CHR_DOWNLOAD_DEST=chr-src
+LOGFILE=Log.txt
+ZLOGFILE=Log2.txt
+FASTA_DIR=fasta
+SUBST_DIR=subst
+ALIGN_DIR=SIFT_alignments
+SIFT_SCORE_DIR=SIFT_predictions
+SINGLE_REC_BY_CHR_DIR=singleRecords
+SINGLE_REC_WITH_SIFTSCORE_DIR=singleRecords_with_scores
+DBSNP_DIR=dbSNP
+
+# Doesn't need to change
+FASTA_LOG=fasta.log
+INVALID_LOG=invalid.log
+PEPTIDE_LOG=peptide.log
+ENS_PATTERN=ENS
+SINGLE_RECORD_PATTERN=:change:_aa1valid_dbsnp.singleRecord
+
+#run config files
+perl make-SIFT-db-all.pl -config ./c.gigas/cgigas_ccg_config.txt
