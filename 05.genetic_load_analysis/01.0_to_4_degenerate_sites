@@ -54,8 +54,18 @@ vcftools --positions 4_site --vcf all.filtered.snp.ann.vcf --recode --recode-INF
 pixy --stats pi --vcf 4_site.recode.vcf.gz --window_size 100000 --populations sample_id --output_prefix 4_site  --bypass_invariant_check 'yes'
 pixy --stats pi --vcf 0_site.recode.vcf.gz --window_size 100000 --populations sample_id --output_prefix 0_site  --bypass_invariant_check 'yes' 
 
-cut -f 1 missense_pi.txt  | sed '1d' | sort | uniq  > list 
-cat list | while read i ; do  echo $i>> missense_pi_summary  ; grep $i missense_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >> missense_pi_summary ; done
+cut -f 1 0_site_pi.txt | sed '1d' | sort | uniq  > list 
+cat list | while read i ; do  echo $i>> 0_site_pi_summary  ; grep $i 0_site_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >> 0_site_pi_summary ; done
+cat list | while read i ; do  echo $i>> 4_site_pi_summary  ; grep $i 4_site_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >> 4_site_pi_summary ; done
+grep '^[0-9]' 0_site_pi_summary > tmp1 
+grep '^[0-9]' 4_site_pi_summary > tmp2
+paste list tmp1 tmp2 | awk '{print $1,$2/$3}' > 0_to_4_degenerate_site_heterozygosity
 
 
+#intergenic heterozygosity
+grep 'intergenic_region' all.filtered.snp.ann.vcf > intergene.txt
+cat head  intergene.txt > intergene.vcf
+pixy --stats pi --vcf intergene.vcf.gz --window_size 100000 --populations sample_id --output_prefix 0_site  --bypass_invariant_check 'yes'
+cat list | while read i ; do  echo $i>> intergene_pi_summary  ; grep $i intergene_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >>  intergene_pi_summary; done
 
+grep '^[0-9]'  intergene_pi_summary | paste 0_to_4_degenerate_site_heterozygosity - > Relativity_0to4_intergenetic.txt 
