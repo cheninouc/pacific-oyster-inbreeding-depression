@@ -1,1 +1,56 @@
-#
+#!/bin/bash 
+##This script is used to  calculate the ratio of heterozygosity at 0-fold relative to 4-fold sites
+
+#step1 Snpeff annotate SNP
+##Create the database directory and copy the config file
+mkdir data
+cp ~/software/snpEff/snpEff.config ./
+##Create a crassostrea gigas database
+echo "# my own genome, version C.giga01
+C.giga01.genome : C.giga01">> snpEff.config
+mkdir ./data/C.giga01
+cp ../annovar/genome.gtf data/C.giga01/genes.gtf
+cp ../annovar/genome.fasta data/C.giga01/sequences.fa
+singularity exec -B /public1:/public1  /public1/db/sif/Reseq_genek.sif java -jar /opt/snpEff/snpEff.jar build -c ./snpEff.config -gtf22 -v C.giga01
+##anotation
+singularity exec -B /public1:/public1  /public1/db/sif/Reseq_genek.sif java -jar /opt/snpEff/snpEff.jar /opt/snpEff/snpEff.jar -c ./snpEff.config -ud 5000 -csvStats test.csv -htmlStats test.html -o vcf C.giga01  ../annovar/all_snp.recode.vcf  > all.filtered.snp.ann.vcf
+
+#step2 get 0 and 4 fold degeneration site 
+##get 0 fold degeneration site
+bcftools query -f '%CHROM\t%POS\t%END\t%ANN\n' all.filtered.snp.ann.vcf |\
+grep "missense" |\
+awk -F"||," '{print $1,$2,$3,$4}' OFS="\t" |\
+cut -f-4 |\
+cut -f1,11,13 -d"|" |\
+sed 's/[A-Z]|//g' |\
+awk -F"|" '$1=$1' OFS="\t" |\
+awk -F"/" '$1=$1' OFS="\t" |\
+awk '{print $0, $5 % 3}' OFS="\t" |\
+awk '$4 !~ "p.Ser" {print}' |\
+awk '{if ($4 ~ "p.Met" || $4 ~ "p.Trp")  print $0, "0FOLD";
+      else if(($4 ~ "p.Phe" || $4 ~ "p.Ile" || $4 ~ "p.Val" || $4 ~ "p.Pro" || $4 ~ "p.Thr" || $4 ~ "p.Ala" || $4 ~ "p.Tyr" || $4 ~ "p.His" || $4 ~ "p.Gln" || $4 ~ "p.Asn" || $4 ~ "p.Lys" || $4 ~ "p.Asp" || $4 ~ "p.Glu" || $4 ~ "p.Cys" || $4 ~ "p.Gly") && ($7 == 1 || $7 == 2)) print $0, "0FOLD";
+      else if(($4 ~ "p.Leu" || $4 ~ "p.Arg") && $7 == 1) print $0, "0FOLD"}' OFS="\t" |\
+cut -f1,2,8 |\
+awk '{print $1, $2 , $3}' OFS="\t" > 0_degeneration_site
+##get 4 fold degeneration site 
+bcftools query -f '%CHROM\t%POS\t%END\t%ANN\n'  all.filtered.snp.ann.vcf |\
+grep "synonymous_variant" |\
+grep "protein_coding" |\
+grep -v "splice_" |\
+cut -f-4 |\
+cut -f1,11,13 -d"|" |\
+sed 's/[A-Z]|//g' |\
+awk -F"|" '$1=$1' OFS="\t" |\
+awk -F"/" '$1=$1' OFS="\t" |\
+awk '{print $0, $5 % 3}' |\
+awk '{if(($4 ~ "p.Ser" || $4 ~ "p.Pro" || $4 ~ "p.Thr" || $4 ~ "p.Ala" || $4 ~ "p.Val" || $4 ~ "p.Leu" || $4 ~ "p.Gly" || $4 ~ "p.Arg") && $7 == 0) print $1, $2,"4FOLD"}' OFS="\t" >4_degeneration_site
+
+##calculate 0/4 fold degeneration
+
+
+pixy --stats pi --vcf missense.vcf.gz --window_size 100000 --populations sample_id --output_prefix missense --bypass_invariant_check 'yes'
+cut -f 1 missense_pi.txt  | sed '1d' | sort | uniq  > list 
+cat list | while read i ; do  echo $i>> missense_pi_summary  ; grep $i missense_pi.txt  | grep -v NA | cut -f 5  | awk '{sum+=$1}END{print sum/NR}' >> missense_pi_summary ; done
+
+
+
