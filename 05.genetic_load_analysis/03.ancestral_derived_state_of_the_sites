@@ -1,0 +1,77 @@
+#!/bin/bash
+#The main aim of this script is : predict the derived or ancestral state of the site.
+
+#Sequence reads (e.g. from SRA) from another closely related species - an outgroup.
+Crassostrea ariakensis:SRR14864886
+Crassostrea sikamea:nd-nd17
+Crassostrea angulata:SRR6063119
+
+#step1:call variants with GATK -- all indviduals combined: outgroup and crassostrea gigas
+
+#step2:create a vcf file for the outgroup individual only
+vcftools --vcf all_snp.recode.vcf --recode --recode-INFO-all --stdout  --keep outgroupIDname > outgroupIDname.vcf
+
+#step3:Create a table of SNP positions and alleles using bcftools
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT[\t%GT]\n' outgroupIDname.vcf  > file.tab
+
+#step4:Create a table file with ancestral allele information.Here we select the reference allele (REF) or the variant allele (ALT) and put it in the 5th column. 
+awk '{OFS="\t";if($5=="0/0" && $6=="0/0" && $7=="0/0"){print $1,$2,$3,$4,$3}if($5=="1/1" && $6=="1/1" && $7=="1/1"){print $1,$2,$3,$4,$4}}'  file.tab > file_aa.tab
+
+#step5:Compress and index the table file and the original vcf file
+bgzip file_aa.tab
+tabix -s1 -b2 -e2 file_aa.tab.gz
+bgzip all_snp.recode.vcf
+
+#step6:Create an INFO file line for the new vcf file
+echo '##INFO=<ID=AA,Number=1,Type=Character,Description="Ancestral allele">' > hdr.txt
+
+#step7:annotate vcftools by sift4g and aquire deleterious mutation.
+vcftools --vcf all_snp.recode.vcf  --recode --recode-INFO-all --stdout  --remove outgroupIDname > withingroup.vcf
+java -jar /public/home/chcg/software/SIFT4G_Annotator/SIFT4G_Annotator.jar -c -i   withingroup.vcf -d /public/home/chcg/software/scripts_to_build_SIFT_db/c.gigas/cgigas_ccg/cgigas1.0 -r ./ &
+
+#step8: Using bcftools to annotate the vcf file with the ancestral allele information
+bcftools annotate -a file_aa.tab.gz -c CHROM,POS,REF,ALT,INFO/AA -h hdr.txt -Oz -o newfile_aa.vcf.gz withingroup_SIFTpredictions.vcf.gz
+
+#step9:Check that it has worked. There should be an info field AA
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\n' newfile_aa.vcf.gz | less
+
+#step10:polarized
+java -jar /public/home/chcg/software/jvarkit-master/dist/vcffilterjdk.jar -e 'if(variant.getNAlleles()!=2 || !variant.hasAttribute("AA")) return true;
+final String aa = variant.getAttributeAsString("AA","");
+if(!variant.getAlleles().get(1).getDisplayString().equalsIgnoreCase(aa)) return true;
+VariantContextBuilder vb=new VariantContextBuilder(variant);
+Allele oldalt = variant.getAlleles().get(1);
+Allele oldref = variant.getAlleles().get(0);
+Allele ref= Allele.create(oldalt.getDisplayString(),true);
+Allele alt= Allele.create(oldref.getDisplayString(),false);
+vb.alleles(Arrays.asList(ref,alt));
+List genotypes= new ArrayList<>();
+for(Genotype g: variant.getGenotypes())
+  {
+  if(!g.isCalled())
+  { genotypes.add(g); continue;}
+  GenotypeBuilder gb = new GenotypeBuilder(g);
+  List alleles = new ArrayList<>();
+  for(Allele a:g.getAlleles()) {
+    if(a.equals(oldalt)) { a=ref;}
+    else if(a.equals(oldref)) { a=alt;}
+    alleles.add(a);
+    }
+  if(g.hasPL()) {
+    int pl[] = g.getPL();
+    int pl2[] = new int[pl.length];
+    for(int i=0;i< pl.length;i++) pl2[i]=pl[(pl.length-1)-i];
+    gb.PL(pl2);
+    }
+  if(g.hasAD())
+    { int ad[] = g.getAD();
+    int ad2[] = new int[ad.length];
+    for(int i=0;i< ad.length;i++) ad2[i]=ad[(ad.length-1)-i];
+    gb.AD(ad2);
+  }
+  genotypes.add(gb.alleles(alleles).make());
+  }
+vb.attribute("AF",1.0d - Double.parseDouble(variant.getAttributeAsString("AF",""))); vb.attribute("AC",variant.getGenotypes().stream().flatMap(G->G.getAlleles().stream()).filter(A->A.equals(oldref)).count());
+vb.genotypes(genotypes);
+return vb.make();' -o  all_snp_polarized.vcf all_snp_aafilled.vcf
+
