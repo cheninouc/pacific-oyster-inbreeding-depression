@@ -35,7 +35,12 @@ bcftools annotate -a file_aa.tab.gz -c CHROM,POS,REF,ALT,INFO/AA -h hdr.txt -Oz 
 #step9:Check that it has worked. There should be an info field AA
 bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\n' newfile_aa.vcf.gz | less
 
-#step10:polarized
+#step10:save site with AA
+gzip -d newfile_aa.vcf.gz
+head -n 1000 newfile_aa.vcf | grep '#' > header
+grep 'AA=' newfile_aa.vcf| grep -v '#' | sed 's/ (//g'  | sed 's/*WARNING! Low confidence)//g' | cat  header - > all_snp_aafilled.vcf
+
+#step11:polarized
 java -jar /public/home/chcg/software/jvarkit-master/dist/vcffilterjdk.jar -e 'if(variant.getNAlleles()!=2 || !variant.hasAttribute("AA")) return true;
 final String aa = variant.getAttributeAsString("AA","");
 if(!variant.getAlleles().get(1).getDisplayString().equalsIgnoreCase(aa)) return true;
