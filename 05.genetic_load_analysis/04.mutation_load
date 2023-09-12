@@ -1,0 +1,48 @@
+#!/bin/bash
+
+#add snpsift annotation
+nohup java -jar ~/software/snpEff/SnpSift.jar caseControl -name _orange -tfam test1.tfam all_snp_polarized.vcf | java -jar ~/software/snpEff/SnpSift.jar caseControl -name _black -tfam test2.tfam - > all_snp_polarized_snpsift.vcf &
+
+#divide the class of the cds polymorphic sites into :  loss-of-function(START-LOSS, STOP-GAIN, STOP LOSS), deleterious, tolerate, synonymous
+grep "START\|STOP" all_snp_polarized_snpsift.vcf > lof.vcf
+grep 'NONSYNONYMOUS' all_snp_polarized_snpsift.vcf |  grep  'DELETERIOUS'  > del.vcf
+grep 'NONSYNONYMOUS' all_snp_polarized_snpsift.vcf |  grep   TOLERATED  > tol.vcf
+grep   -v  NONSYNONYMOUS all_snp_polarized_snpsift.vcf |  grep '^#\|SYNONYMOUS' | grep -v DELETERIOUS  > syn.vcf
+
+#lof dele tole syn DAF
+#bash.sh
+awk '{if($1>0 && $1 <=0.1) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.1 && $1 <=0.2) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.2 && $1 <=0.3) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.3 && $1 <=0.4) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.4 && $1 <=0.5) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.5 && $1 <=0.6) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.6 && $1 <=0.7) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.7 && $1 <=0.8) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.8 && $1 <=0.9) print $0}'  sort  | wc -l >> tt.txt
+awk '{if($1>0.9 && $1 <=1) print $0}'  sort  | wc -l >> tt.txt
+#orange
+grep "START\|STOP" ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | awk -F 'Cases_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/54}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  |grep  'DELETERIOUS'  | awk -F 'Cases_orange=' '{print $2}'   | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/54}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | grep   TOLERATED  |  awk -F 'Cases_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/54}'   > sort
+grep   -v  NONSYNONYMOUS  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf | grep SYNONYMOUS | grep -v DELETERIOUS  | awk -F 'Cases_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/54}'   > sort
+#black
+grep "START\|STOP" ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | awk -F 'Cases_black=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/60}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  |grep  'DELETERIOUS'  | awk -F 'Cases_black=' '{print $2}'   | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/60}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | grep   TOLERATED  |  awk -F 'Cases_blcak=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/60}'   > sort
+grep   -v  NONSYNONYMOUS  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf | grep SYNONYMOUS | grep -v DELETERIOUS  | awk -F 'Cases_black=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/60}'   > sort
+#wild
+grep "START\|STOP" ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | awk -F 'Controls_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/40}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  |grep  'DELETERIOUS'  | awk -F 'Controls_orange=' '{print $2}'   | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/40}'   > sort
+grep 'NONSYNONYMOUS'  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | grep   TOLERATED  |  awk -F 'Controls_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/40}'   > sort
+grep   -v  NONSYNONYMOUS  ../../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf | grep SYNONYMOUS | grep -v DELETERIOUS  | awk -F 'Controls_orange=' '{print $2}' | awk -F ';' '{print $1}' |  awk -F ',' '{print $3}' | awk '{print $1/40}'   > sort
+
+#calculate the number of lof del tol syn muation in hom het alleles 
+#lof
+for i in {10..86};do  echo $i >>tmp_${i} ; grep "START\|STOP" ../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf  | cut -f $i | awk -F ':' '{print $1}' | sort | uniq -c >>tmp_${i};done
+#del
+for i in {10..86};do  echo $i >>tmp_${i} ; grep 'NONSYNONYMOUS' ../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf |grep  'DELETERIOUS'  | cut -f $i | awk -F ':' '{print $1}' | sort | uniq -c >>tmp_${i};done
+#tol
+for i in {10..86};do  echo $i >>tmp_${i} ; grep 'NONSYNONYMOUS' ../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf | grep   TOLERATED  | cut -f $i | awk -F ':' '{print $1}' | sort | uniq -c >>tmp_${i};done
+#syn
+for i in {10..86};do  echo $i >>tmp_${i} ; grep   -v  NONSYNONYMOUS  ../../00.dele_LOF_syn_vcf_file/all_snp_polarized_snpsift.vcf | grep SYNONYMOUS | grep -v DELETERIOUS  | cut -f $i | awk -F ':' '{print $1}' | sort | uniq -c >>tmp_${i};done
